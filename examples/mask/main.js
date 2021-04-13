@@ -133,10 +133,12 @@ const noseMaterial = new MeshStandardMaterial({
   transparent: true,
 });
 
+let curScale = 20;
+let curArea = 0;
 const nose = new Mesh(new IcosahedronGeometry(1, 3), noseMaterial);
 nose.castShadow = nose.receiveShadow = true;
 scene.add(nose);
-nose.scale.setScalar(40);
+nose.scale.setScalar(curScale);
 
 // Enable wireframe to debug the mesh on top of the material.
 let wireframe = false;
@@ -181,6 +183,21 @@ async function render(model) {
     const track = faceGeometry.track(5, 45, 275);
     nose.position.copy(track.position);
     nose.rotation.setFromRotationMatrix(track.rotation);
+
+    // Calc bounding box for area comparison
+    faceGeometry.computeBoundingBox();
+    let area = (faceGeometry.boundingBox.max.x - faceGeometry.boundingBox.min.x ) *
+            (faceGeometry.boundingBox.max.z - faceGeometry.boundingBox.min.z)   // NOTE: NOT y axis.
+
+    // Calc scale from last frame using area comparison
+    if (curArea != 0) {
+      let scale = area / curArea;
+
+      curScale = curScale * scale;
+      nose.scale.setScalar(curScale);
+    }
+
+    curArea = area;
   }
 
   if (wireframe) {
