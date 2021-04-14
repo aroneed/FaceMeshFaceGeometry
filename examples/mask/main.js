@@ -146,6 +146,10 @@ let wireframe = false;
 // Defines if the source should be flipped horizontally.
 let flipCamera = true;
 
+// FPS
+const times = [];
+let fps;
+
 async function render(model) {
   // Wait for video to be ready (loadeddata).
   await av.ready();
@@ -215,6 +219,14 @@ async function render(model) {
     // Render the scene normally.
     renderer.render(scene, camera);
   }
+
+  const now = performance.now();
+  while (times.length > 0 && times[0] <= now - 1000) {
+    times.shift();
+  }
+  times.push(now);
+  fps = times.length;
+  status.textContent = fps + " FPS";
 
   requestAnimationFrame(() => render(model));
 }
