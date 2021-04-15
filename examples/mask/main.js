@@ -172,11 +172,14 @@ async function render(model) {
     faceGeometry.setSize(w, h);
   }
 
+  let sTime = performance.now();
   // Wait for the model to return a face.
   const faces = await model.estimateFaces(av.video, false, flipCamera);
+  let eTime = performance.now();
+  let elapsed = eTime - sTime;
 
   av.style.opacity = 1;
-  status.textContent = "";
+  //status.textContent = "";
 
   // There's at least one face.
   if (faces.length > 0) {
@@ -226,7 +229,7 @@ async function render(model) {
   }
   times.push(now);
   fps = times.length;
-  status.textContent = fps + " FPS";
+  status.textContent = fps + " FPS (DL inference elaped : " + elapsed + "ms)";
 
   requestAnimationFrame(() => render(model));
 }
