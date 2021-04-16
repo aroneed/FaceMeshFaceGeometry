@@ -14,6 +14,9 @@ import {
   MeshBasicMaterial,
   TextureLoader,
   MeshStandardMaterial,
+  Texture,
+  LinearFilter,
+  PlaneGeometry,
 } from "../../third_party/three.module.js";
 import { FaceMeshFaceGeometry } from "../../js/face.js";
 import { OrbitControls } from "../../third_party/OrbitControls.js";
@@ -28,7 +31,10 @@ const renderer = new WebGLRenderer({ antialias: true, alpha: true, canvas });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFSoftShadowMap;
-renderer.outputEncoding = sRGBEncoding;
+
+// NOTE: It cause 'pale' texture problem. 
+// but actually it's needed to improve gamma correction
+//renderer.outputEncoding = sRGBEncoding;
 
 const scene = new Scene();
 const camera = new OrthographicCamera(1, 1, 1, 1, -1000, 1000);
@@ -140,6 +146,24 @@ nose.castShadow = nose.receiveShadow = true;
 scene.add(nose);
 nose.scale.setScalar(curScale);
 
+// Render video as 3d texture
+let videoTexture = null;
+function setVideoTextureBG() {
+  videoTexture = new Texture(av.video)
+  videoTexture.minFilter = LinearFilter;
+  videoTexture.maxFilter = LinearFilter;
+  var videoMaterial = new MeshBasicMaterial({
+    map: videoTexture,
+    side: DoubleSide
+  });
+
+  // Video geometry'size should same as video capture
+  const vid = new Mesh(new PlaneGeometry(500, 500, 1), videoMaterial);
+  vid.position.set(0, 0, -30);
+  vid.scale.x = -1;
+  scene.add(vid);
+}
+
 // Enable wireframe to debug the mesh on top of the material.
 let wireframe = false;
 
@@ -172,13 +196,18 @@ async function render(model) {
     faceGeometry.setSize(w, h);
   }
 
+  if (av.video.readyState === av.video.HAVE_ENOUGH_DATA) {
+    if (videoTexture) videoTexture.needsUpdate = true;
+  }
+
   let sTime = performance.now();
   // Wait for the model to return a face.
   const faces = await model.estimateFaces(av.video, false, flipCamera);
   let eTime = performance.now();
   let elapsed = eTime - sTime;
 
-  av.style.opacity = 1;
+  av.style.opacity = 0;
+  //av.style.opacity = 1;
   //status.textContent = "";
 
   // There's at least one face.
@@ -237,9 +266,15 @@ async function render(model) {
 // Init the demo, loading dependencies.
 async function init() {
   await Promise.all([tf.setBackend("webgl"), av.ready()]);
+
+  // We need to set video texture after video object ready
+  setVideoTextureBG();
+
+  // Load DL model
   status.textContent = "Loading model...";
   const model = await facemesh.load({ maxFaces: 1 });
-  status.textContent = "Detecting face...";
+  status.textContent = "Waiting for video capture & render...";
+
   render(model);
 }
 
