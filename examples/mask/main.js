@@ -14,6 +14,9 @@ import {
   MeshBasicMaterial,
   TextureLoader,
   MeshStandardMaterial,
+  Texture,
+  LinearFilter,
+  PlaneGeometry,
 } from "../../third_party/three.module.js";
 import { FaceMeshFaceGeometry } from "../../js/face.js";
 import { OrbitControls } from "../../third_party/OrbitControls.js";
@@ -28,7 +31,10 @@ const renderer = new WebGLRenderer({ antialias: true, alpha: true, canvas });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFSoftShadowMap;
-renderer.outputEncoding = sRGBEncoding;
+
+// NOTE: It cause 'pale' texture problem. 
+// but actually it's needed to improve gamma correction
+//renderer.outputEncoding = sRGBEncoding;
 
 const scene = new Scene();
 const camera = new OrthographicCamera(1, 1, 1, 1, -1000, 1000);
@@ -133,16 +139,40 @@ const noseMaterial = new MeshStandardMaterial({
   transparent: true,
 });
 
+let curScale = 20;
+let curArea = 0;
 const nose = new Mesh(new IcosahedronGeometry(1, 3), noseMaterial);
 nose.castShadow = nose.receiveShadow = true;
 scene.add(nose);
-nose.scale.setScalar(40);
+nose.scale.setScalar(curScale);
+
+// Render video as 3d texture
+let videoTexture = null;
+function setVideoTextureBG() {
+  videoTexture = new Texture(av.video)
+  videoTexture.minFilter = LinearFilter;
+  videoTexture.maxFilter = LinearFilter;
+  var videoMaterial = new MeshBasicMaterial({
+    map: videoTexture,
+    side: DoubleSide
+  });
+
+  // Video geometry'size should same as video capture
+  const vid = new Mesh(new PlaneGeometry(500, 500, 1), videoMaterial);
+  vid.position.set(0, 0, -30);
+  vid.scale.x = -1;
+  scene.add(vid);
+}
 
 // Enable wireframe to debug the mesh on top of the material.
 let wireframe = false;
 
 // Defines if the source should be flipped horizontally.
 let flipCamera = true;
+
+// FPS
+const times = [];
+let fps;
 
 async function render(model) {
   // Wait for video to be ready (loadeddata).
@@ -166,11 +196,19 @@ async function render(model) {
     faceGeometry.setSize(w, h);
   }
 
+  if (av.video.readyState === av.video.HAVE_ENOUGH_DATA) {
+    if (videoTexture) videoTexture.needsUpdate = true;
+  }
+
+  let sTime = performance.now();
   // Wait for the model to return a face.
   const faces = await model.estimateFaces(av.video, false, flipCamera);
+  let eTime = performance.now();
+  let elapsed = eTime - sTime;
 
-  av.style.opacity = 1;
-  status.textContent = "";
+  av.style.opacity = 0;
+  //av.style.opacity = 1;
+  //status.textContent = "";
 
   // There's at least one face.
   if (faces.length > 0) {
@@ -181,6 +219,21 @@ async function render(model) {
     const track = faceGeometry.track(5, 45, 275);
     nose.position.copy(track.position);
     nose.rotation.setFromRotationMatrix(track.rotation);
+
+    // Calc bounding box for area comparison
+    faceGeometry.computeBoundingBox();
+    let area = (faceGeometry.boundingBox.max.x - faceGeometry.boundingBox.min.x ) *
+            (faceGeometry.boundingBox.max.z - faceGeometry.boundingBox.min.z)   // NOTE: NOT y axis.
+
+    // Calc scale from last frame using area comparison
+    if (curArea != 0) {
+      let scale = area / curArea;
+
+      curScale = curScale * scale;
+      nose.scale.setScalar(curScale);
+    }
+
+    curArea = area;
   }
 
   if (wireframe) {
@@ -199,15 +252,29 @@ async function render(model) {
     renderer.render(scene, camera);
   }
 
+  const now = performance.now();
+  while (times.length > 0 && times[0] <= now - 1000) {
+    times.shift();
+  }
+  times.push(now);
+  fps = times.length;
+  status.textContent = fps + " FPS (DL inference elaped : " + elapsed + "ms)";
+
   requestAnimationFrame(() => render(model));
 }
 
 // Init the demo, loading dependencies.
 async function init() {
   await Promise.all([tf.setBackend("webgl"), av.ready()]);
+
+  // We need to set video texture after video object ready
+  setVideoTextureBG();
+
+  // Load DL model
   status.textContent = "Loading model...";
   const model = await facemesh.load({ maxFaces: 1 });
-  status.textContent = "Detecting face...";
+  status.textContent = "Waiting for video capture & render...";
+
   render(model);
 }
 
