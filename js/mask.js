@@ -324,7 +324,7 @@ class MaskHelper {
       let elapsedInfo = "";
       
       if (elapsed != 0) {
-        elapsedInfo = "(DL inference elaped : " + elapsed + "ms)";
+        elapsedInfo = "(DL inference elaped : " + elapsed.toFixed(4) + "ms)";
       }
       this.debugMsg(fpsInfo + elapsedInfo);
     }
