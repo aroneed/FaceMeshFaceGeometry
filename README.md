@@ -31,30 +31,38 @@ _NOTE: All toggle functions also can be a setter, if you specify the flag(true/f
 
 
 ```
-#### constructor(av, canvas, assetPath, debugFunc=null)
+constructor(av, canvas, assetPath, debugFunc=null)
+```
 
 Create mask-helper with input(av), output source(canvas) and path(assetPath) for texture & 3d objects.
 if you set function for debug(debugFunc), it will be callback with debug message.
 
 
-#### toggleMask(flag=null)
+```
+toggleMask(flag=null)
+```
 
 Toggle(Activate/deactivate) mask engine.
 
 
-#### toggleDebug(flag=null)
+```
+toggleDebug(flag=null)
+```
 
 Toggle(draw/undraw) face detection/facial landmark detection result. 
 
 
-#### togglePerformance(flag=null)
+```
+togglePerformance(flag=null)
+```
 
 Toggle(check/uncheck) masking engine's performance (elapsed time, FPS)
 
 
-#### resizeRender()
+```
+resizeRender()
+```
 
 Resize rendering area on screen. please enroll this function to browser window's event listener. 
 
-```
 
