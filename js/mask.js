@@ -339,9 +339,9 @@ class MaskHelper {
     
     this.debugMsg("Loading model...");
     const model = await facemesh.load({ maxFaces: 1 });
+    this.debugMsg("Done. start to rendering");
             
     await this.render(model, av);
-    this.debugMsg("Done. start to rendering");
   }
 }
 

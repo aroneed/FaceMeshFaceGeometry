@@ -1,6 +1,6 @@
 
 class WebcamHelper {
-  constructor() {
+  constructor(cam_width=500, cam_height=500) {
     this.invalidateVideoSource();
     console.assert(navigator.webkitGetUserMedia || navigator.mozGetUserMedia)
 
@@ -22,7 +22,7 @@ class WebcamHelper {
                             navigator.msGetUserMedia;
 
     const constraints = {
-      video: { width: 500, height: 500 },
+      video: { width: cam_width, height: cam_height },
     };
 
     if (navigator.getUserMedia) {
