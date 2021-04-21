@@ -32,7 +32,7 @@ class MaskHelper {
   // Screen and objects size & scale
   width = 0;
   height = 0;
-  curScale = 20;
+  curScale = 18;
   curArea = 0;
   
   // Textures & Objects
@@ -150,7 +150,7 @@ class MaskHelper {
   
   addFaceMask(assetPath) {
     // Load textures
-    const colorTexture = new TextureLoader().load(assetPath + "/mesh_map.jpg");
+    const colorTexture = new TextureLoader().load(assetPath + "/joker.png");
     const aoTexture = new TextureLoader().load(assetPath + "/ao.jpg");
     const alphaTexture = new TextureLoader().load(assetPath + "/mask.png");
     
@@ -165,9 +165,9 @@ class MaskHelper {
     
     // Create material for mask.
     const material = new MeshStandardMaterial({
-      color: 0x808080,
-      roughness: 0.8,
-      metalness: 0.1,
+      color: 0xffffff,
+      roughness: 0.1,
+      metalness: 0.0,
       alphaMap: alphaTexture,
       aoMap: aoTexture,
       map: colorTexture,
@@ -197,7 +197,7 @@ class MaskHelper {
   }
   
   addLight() { 
-    const spotLight = new SpotLight(0xffffbb, 1);
+    const spotLight = new SpotLight(0xffffff, 1);
     spotLight.position.set(0.5, 0.5, 1);
     spotLight.position.multiplyScalar(400);
     this.scene.add(spotLight);
